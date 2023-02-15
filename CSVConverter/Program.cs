@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Reflection;
 
 var cw = new CsvWriter<Library>();
 cw.Write(GetLibraries(), "example.csv");
@@ -37,6 +38,27 @@ public static class Csv
         string output = "";
         try
         {
+            var _result = obj.GetType().GetProperties()
+                .Where(x => !x.PropertyType.IsArray 
+                    || (x.PropertyType.IsArray 
+                        && (x.GetCustomAttribute<ColumnData>() is not null 
+                        || x.GetCustomAttribute<CellData>() is not null)) )
+                .Select(x => 
+                {
+                    if (!x.PropertyType.IsArray) return x.GetValue(obj)?.ToString();
+                    if (x.PropertyType.IsArray)
+                    {
+                        if(x.GetCustomAttribute<ColumnData>() is not null)
+                            return x.
+                        if(x.GetCustomAttribute<CellData>() is not null)
+                    }
+
+
+
+
+                })
+
+
             var properties = obj.GetType().GetProperties();
             var res = properties.Where(p => !p.PropertyType.IsArray).
                 Select(p => p.GetValue(obj)?.ToString());
