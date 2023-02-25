@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Reflection;
+﻿using System.Reflection;
 
 var cw = new CsvWriter<Library>();
 cw.Write(GetLibraries(), "example.csv");
@@ -38,55 +37,24 @@ public static class Csv
         string output = "";
         try
         {
-            var _result = obj.GetType().GetProperties()
+            output += obj
+                .GetType()
+                .GetProperties()
                 .Where(x => !x.PropertyType.IsArray
                     || (x.PropertyType.IsArray
                         && (x.GetCustomAttribute<ColumnData>() is not null
                         || x.GetCustomAttribute<CellData>() is not null)))
                 .Select(x =>
                 {
-                    if (!x.PropertyType.IsArray) return x.GetValue(obj)?.ToString().Aggregate((a, b) => a + "," + b);
-                    if (x.PropertyType.IsArray)
-                    {
-                        if (x.GetCustomAttribute<ColumnData>() is not null)
-                        {
-                            return string.Join(";", (x.GetValue(obj) as IEnumerable<object>)./*Select(x => (x as IEnumerable<object>).*/Select(x => x.ToCsvLinq()));
-                        }
-                        //if (x.GetCustomAttribute<CellData>() is not null)
-                    }
-                    return null;
-                });
-            //Console.WriteLine();
-
-            //var properties = obj.GetType().GetProperties();
-            //var res = properties.Where(p => !p.PropertyType.IsArray).
-            //    Select(p => p.GetValue(obj)?.ToString());
-            //output += string.Join(';', res);
-            //if (res is not null) output += ";";
-
-            //var arrayProperties = properties.Where(p => p.PropertyType.IsArray);
-            //var customAttributes = arrayProperties.Select(p => p.GetCustomAttributes(false));
-            //var hasColumnData = customAttributes.Select(x => x.Select(a => a as ColumnData)).
-            //    Select(x => x.Any(t => t is not null)).
-            //    Any(x => x is true);
-            //var columnDataProperties = properties.Where(p => p.PropertyType.IsArray && hasColumnData);
-            //var columnDataRes = columnDataProperties.Select(p => p.GetValue(obj));
-            //var columnRes = columnDataRes.Select(x => ((IEnumerable)x!).
-            //Cast<object>().
-            //ToList());
-            //var stringColumnRes = columnRes.Select(x => x.Select(p => p.ToCsvLinq()));
-            //output += string.Join(';', stringColumnRes.Select(x => string.Join(";", x)));
-
-            //var hasCellData = customAttributes.Select(x => x.Select(a => a as CellData)).
-            //    Select(x => x.Any(t => t is not null)).
-            //    Any(x => x is true);
-            //var cellDataProperties = properties.Where(p => p.PropertyType.IsArray && hasCellData);
-            //var cellDataRes = cellDataProperties.Select(p => p.GetValue(obj));
-            //var cellRes = cellDataRes.Select(x => ((IEnumerable)x!).
-            //Cast<object>().
-            //ToList());
-            //var stringCellRes = cellRes.Select(x => x.Select(p => p.ToString()));
-            //output += string.Join(';', stringCellRes.Select(x => string.Join(",", x)));
+                    return x.PropertyType.IsArray ?
+                                x.GetCustomAttribute<ColumnData>() is not null ? 
+                                    string.Join(";", (x.GetValue(obj) as IEnumerable<object>).Select(x => x.ToCsvLinq())) 
+                                : x.GetCustomAttribute<CellData>() is not null ? 
+                                        string.Join(",", (x.GetValue(obj) as IEnumerable<object>).Select(x => x.ToString())) 
+                                  : null
+                           : x.GetValue(obj)?.ToString();
+                })
+                .Aggregate((a, b) => a + ";" + b);
         }
         catch (Exception)
         {
@@ -139,11 +107,8 @@ public class CsvWriter<T>
 {
     public void Write(IEnumerable<T> objects, string destination)
     {
-        var objs = objects as IList<T> ?? objects.ToList();
-        if (objs.Any())
-            using (var sw = new StreamWriter(destination))
-                foreach (var o in objs)
-                    sw.WriteLine(o?.ToCsvLinq());
+        using (var sw = new StreamWriter(destination))
+            sw.WriteLine(objects.Select(x => x?.ToCsv()).Aggregate((a, b) => a + "\n" + b));
     }
 }
 
