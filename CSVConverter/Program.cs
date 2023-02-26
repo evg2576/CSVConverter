@@ -48,9 +48,13 @@ public static class Csv
                 {
                     return x.PropertyType.IsArray ?
                                 x.GetCustomAttribute<ColumnData>() is not null ? 
-                                    string.Join(";", (x.GetValue(obj) as IEnumerable<object>).Select(x => x.ToCsvLinq())) 
+                                    (x.GetValue(obj) as IEnumerable<object>)
+                                    .Select(x => x.ToCsvLinq())
+                                    .Aggregate((a, b) => a + ";" + b)
                                 : x.GetCustomAttribute<CellData>() is not null ? 
-                                        string.Join(",", (x.GetValue(obj) as IEnumerable<object>).Select(x => x.ToString())) 
+                                        (x.GetValue(obj) as IEnumerable<object>)
+                                        .Select(x => x.ToString())
+                                        .Aggregate((a, b) => a + "," + b)
                                   : null
                            : x.GetValue(obj)?.ToString();
                 })
